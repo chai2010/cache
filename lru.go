@@ -76,7 +76,7 @@ func (p *LRUCache) NewId() uint64 {
 	return v
 }
 
-func (p *LRUCache) Insert(key string, value interface{}, size int64, deleter func(key string, value interface{})) {
+func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) Handle {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -88,20 +88,21 @@ func (p *LRUCache) Insert(key string, value interface{}, size int64, deleter fun
 		p.unref(h)
 	}
 
-	newEntry := &LRUHandle{
+	h := &LRUHandle{
 		c:             p,
 		key:           key,
 		value:         value,
-		size:          size,
+		size:          int64(size),
 		deleter:       deleter,
 		time_accessed: time.Now(),
 		refs:          2, // One from LRUCache, one for the returned handle
 	}
 
-	element := p.list.PushFront(newEntry)
+	element := p.list.PushFront(h)
 	p.table[key] = element
-	p.size += newEntry.size
+	p.size += h.size
 	p.checkCapacity()
+	return h
 }
 
 func (p *LRUCache) Lookup(key string) (Handle, bool) {
@@ -116,6 +117,7 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	p.list.MoveToFront(element)
 	h := element.Value.(*LRUHandle)
 	h.time_accessed = time.Now()
+	h.refs++
 	return h, true
 }
 
@@ -221,9 +223,7 @@ func (p *LRUCache) unref(h *LRUHandle) {
 	assert(h.refs > 0)
 	h.refs--
 	if h.refs <= 0 {
-		if _, ok := p.table[h.key]; ok {
-			p.size -= h.size
-		}
+		p.size -= h.size
 		if h.deleter != nil {
 			h.deleter(h.key, h.value)
 		}

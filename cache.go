@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package cache provides a simple LRU cache.
 package cache
 
 // Cache is a thread-safe cache.
@@ -18,7 +17,7 @@ type Cache interface {
 	//
 	// When the inserted entry is no longer needed, the key and
 	// value will be passed to "deleter".
-	Insert(key string, value interface{}, size int64, deleter func(key string, value interface{}))
+	Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) Handle
 
 	// If the cache has no mapping for "key", returns nil, false.
 	//
