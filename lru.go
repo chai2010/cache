@@ -241,6 +241,21 @@ func (p *LRUCache) checkCapacity() {
 	}
 }
 
+func (p *LRUCache) Clear() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, element := range p.table {
+		h := element.Value.(*LRUHandle)
+		p.unref(h)
+	}
+
+	p.list = list.New()
+	p.table = make(map[string]*list.Element)
+	p.size = 0
+	return nil
+}
+
 func (p *LRUCache) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
