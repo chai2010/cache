@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	_ Cache  = (*LRUCache)(nil)
 	_ Handle = (*LRUHandle)(nil)
 )
 
@@ -38,19 +39,23 @@ type LRUCache struct {
 }
 
 type LRUHandle struct {
+	c             *LRUCache
 	key           string
 	value         interface{}
 	size          int64
 	deleter       func(key string, value interface{})
 	time_accessed time.Time
+	refs          uint32
 }
 
-func (p *LRUHandle) Value() interface{} {
-	return p.value
+func (h *LRUHandle) Value() interface{} {
+	return h.value
 }
 
-func (p *LRUHandle) Release() {
-	// ref--
+func (h *LRUHandle) Release() {
+	h.c.mu.Lock()
+	defer h.c.mu.Unlock()
+	h.c.unref(h)
 }
 
 // NewLRUCache creates a new empty cache with the given capacity.
@@ -71,9 +76,35 @@ func (p *LRUCache) NewId() uint64 {
 	return v
 }
 
-// Get returns a value from the cache, and marks the LRUHandle as most
-// recently used.
-func (p *LRUCache) Get(key string) (v interface{}, ok bool) {
+func (p *LRUCache) Insert(key string, value interface{}, size int64, deleter func(key string, value interface{})) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if element := p.table[key]; element != nil {
+		p.list.Remove(element)
+		delete(p.table, key)
+
+		h := element.Value.(*LRUHandle)
+		p.unref(h)
+	}
+
+	newEntry := &LRUHandle{
+		c:             p,
+		key:           key,
+		value:         value,
+		size:          size,
+		deleter:       deleter,
+		time_accessed: time.Now(),
+		refs:          2, // One from LRUCache, one for the returned handle
+	}
+
+	element := p.list.PushFront(newEntry)
+	p.table[key] = element
+	p.size += newEntry.size
+	p.checkCapacity()
+}
+
+func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -81,46 +112,28 @@ func (p *LRUCache) Get(key string) (v interface{}, ok bool) {
 	if element == nil {
 		return nil, false
 	}
-	p.moveToFront(element)
-	return element.Value.(*LRUHandle).value, true
+
+	p.list.MoveToFront(element)
+	h := element.Value.(*LRUHandle)
+	h.time_accessed = time.Now()
+	return h, true
 }
 
-// Set sets a value in the cache.
-func (p *LRUCache) Set(key string, value interface{}, size int) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if element := p.table[key]; element != nil {
-		p.updateInplace(element, value, size)
-	} else {
-		p.addNew(key, value, size)
-	}
-}
-
-// Delete removes an LRUHandle from the cache, and returns if the LRUHandle existed.
-func (p *LRUCache) Delete(key string) bool {
+func (p *LRUCache) Erase(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	element := p.table[key]
 	if element == nil {
-		return false
+		return
 	}
 
 	p.list.Remove(element)
 	delete(p.table, key)
-	p.size -= element.Value.(*LRUHandle).size
-	return true
-}
 
-// Clear will clear the entire cache.
-func (p *LRUCache) Clear() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.list.Init()
-	p.table = make(map[string]*list.Element)
-	p.size = 0
+	h := element.Value.(*LRUHandle)
+	p.unref(h)
+	return
 }
 
 // SetCapacity will set the capacity of the cache. If the capacity is
@@ -150,7 +163,12 @@ func (p *LRUCache) StatsJSON() string {
 		return "{}"
 	}
 	l, s, c, o := p.Stats()
-	return fmt.Sprintf("{\"Length\": %v, \"Size\": %v, \"Capacity\": %v, \"OldestAccess\": \"%v\"}", l, s, c, o)
+	return fmt.Sprintf(`{
+	"Length": %v,
+	"Size": %v,
+	"Capacity": %v,
+	"OldestAccess": "%v"
+}`, l, s, c, o)
 }
 
 // Length returns how many elements are in the cache
@@ -198,36 +216,43 @@ func (p *LRUCache) Keys() []string {
 	return keys
 }
 
-func (p *LRUCache) updateInplace(element *list.Element, value interface{}, size int) {
-	valueSize := int64(size)
-	sizeDiff := valueSize - element.Value.(*LRUHandle).size
-	element.Value.(*LRUHandle).value = value
-	element.Value.(*LRUHandle).size = valueSize
-	p.size += sizeDiff
-	p.moveToFront(element)
-	p.checkCapacity()
-}
-
-func (p *LRUCache) moveToFront(element *list.Element) {
-	p.list.MoveToFront(element)
-	element.Value.(*LRUHandle).time_accessed = time.Now()
-}
-
-func (p *LRUCache) addNew(key string, value interface{}, size int) {
-	newEntry := &LRUHandle{key, value, int64(size), func(key string, value interface{}) {}, time.Now()}
-	element := p.list.PushFront(newEntry)
-	p.table[key] = element
-	p.size += newEntry.size
-	p.checkCapacity()
+// must call h.c.mu.Lock() first!!!
+func (p *LRUCache) unref(h *LRUHandle) {
+	assert(h.refs > 0)
+	h.refs--
+	if h.refs <= 0 {
+		if _, ok := p.table[h.key]; ok {
+			p.size -= h.size
+		}
+		if h.deleter != nil {
+			h.deleter(h.key, h.value)
+		}
+	}
 }
 
 func (p *LRUCache) checkCapacity() {
 	// Partially duplicated from Delete
 	for p.size > p.capacity {
 		delElem := p.list.Back()
-		delValue := delElem.Value.(*LRUHandle)
+		h := delElem.Value.(*LRUHandle)
 		p.list.Remove(delElem)
-		delete(p.table, delValue.key)
-		p.size -= delValue.size
+		delete(p.table, h.key)
+		p.unref(h)
 	}
+}
+
+func (p *LRUCache) Close() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, element := range p.table {
+		h := element.Value.(*LRUHandle)
+		assert(h.refs == 1)
+		p.unref(h)
+	}
+
+	p.list = nil
+	p.table = nil
+	p.size = 0
+	return nil
 }

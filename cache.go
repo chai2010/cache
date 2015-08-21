@@ -7,21 +7,23 @@ package cache
 
 // Cache is a thread-safe cache.
 type Cache interface {
+	// Return a new numeric id.  May be used by multiple clients who are
+	// sharing the same cache to partition the key space.  Typically the
+	// client will allocate a new id at startup and prepend the id to
+	// its cache keys.
+	NewId() uint64
+
 	// Insert a mapping from key->value into the cache and assign it
-	// the specified charge against the total cache capacity.
-	//
-	// Returns a handle that corresponds to the mapping.  The caller
-	// must call handle.Release() when the returned mapping is no
-	// longer needed.
+	// the specified size against the total cache capacity.
 	//
 	// When the inserted entry is no longer needed, the key and
 	// value will be passed to "deleter".
-	Insert(key string, value interface{}, charge int, deleter func(key string, value interface{})) Handle
+	Insert(key string, value interface{}, size int64, deleter func(key string, value interface{}))
 
-	// If the cache has no mapping for "key", returns NULL.
+	// If the cache has no mapping for "key", returns nil, false.
 	//
 	// Else return a handle that corresponds to the mapping.  The caller
-	// must call this->Release(handle) when the returned mapping is no
+	// must call handle.Release() when the returned mapping is no
 	// longer needed.
 	Lookup(key string) (h Handle, ok bool)
 
@@ -29,12 +31,6 @@ type Cache interface {
 	// underlying entry will be kept around until all existing handles
 	// to it have been released.
 	Erase(key string)
-
-	// Return a new numeric id.  May be used by multiple clients who are
-	// sharing the same cache to partition the key space.  Typically the
-	// client will allocate a new id at startup and prepend the id to
-	// its cache keys.
-	NewId() uint64
 
 	// Destroys all existing entries by calling the "deleter"
 	// function that was passed to the constructor.
