@@ -263,7 +263,7 @@ func (p *LRUCache) Close() error {
 
 	for _, element := range p.table {
 		h := element.Value.(*LRUHandle)
-		assert(h.refs == 1)
+		assert(h.refs == 1, "h.refs = ", h.refs)
 		p.unref(h)
 	}
 

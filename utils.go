@@ -10,6 +10,10 @@ import (
 
 func assert(v bool, a ...interface{}) {
 	if !v {
-		panic(fmt.Sprint(a...))
+		if msg := fmt.Sprint(a...); msg != "" {
+			panic(fmt.Sprintf("assert failed, %s!", msg))
+		} else {
+			panic(fmt.Sprintf("assert failed!"))
+		}
 	}
 }
