@@ -232,7 +232,8 @@ func (p *LRUCache) unref(h *LRUHandle) {
 
 func (p *LRUCache) checkCapacity() {
 	// Partially duplicated from Delete
-	for p.size > p.capacity {
+	// must keep the front element valid!!!
+	for p.size > p.capacity && len(p.table) > 1 {
 		delElem := p.list.Back()
 		h := delElem.Value.(*LRUHandle)
 		p.list.Remove(delElem)
