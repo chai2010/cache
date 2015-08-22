@@ -49,8 +49,16 @@ type LRUHandle struct {
 	refs          uint32
 }
 
+func (h *LRUHandle) Key() string {
+	return h.key
+}
+
 func (h *LRUHandle) Value() interface{} {
 	return h.value
+}
+
+func (h *LRUHandle) Size() int {
+	return int(h.size)
 }
 
 func (h *LRUHandle) Release() {
