@@ -15,6 +15,10 @@ type Cache interface {
 	// Insert a mapping from key->value into the cache and assign it
 	// the specified size against the total cache capacity.
 	//
+	// Return a handle that corresponds to the mapping.  The caller
+	// must call handle.Release() when the returned mapping is no
+	// longer needed.
+	//
 	// When the inserted entry is no longer needed, the key and
 	// value will be passed to "deleter".
 	Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) Handle
@@ -33,6 +37,7 @@ type Cache interface {
 
 	// Destroys all existing entries by calling the "deleter"
 	// function that was passed to the constructor.
+	// REQUIRES: all handles must have been released.
 	Close() error
 }
 
@@ -41,11 +46,11 @@ type Handle interface {
 	// Return the value encapsulated in a handle returned by a
 	// successful Lookup().
 	// REQUIRES: handle must not have been released yet.
-	// REQUIRES: handle must have been returned by a method on *this.
+	// REQUIRES: cache must not have been closed yet.
 	Value() interface{}
 
 	// Release a mapping returned by a previous Lookup().
 	// REQUIRES: handle must not have been released yet.
-	// REQUIRES: handle must have been returned by a method on *this.
+	// REQUIRES: cache must not have been closed yet.
 	Release()
 }

@@ -38,6 +38,7 @@ type LRUCache struct {
 	last_id uint64
 }
 
+// LRUHandle handle to an entry stored in the LRUCache.
 type LRUHandle struct {
 	c             *LRUCache
 	key           string
@@ -67,6 +68,10 @@ func NewLRUCache(capacity int64) *LRUCache {
 	}
 }
 
+// Return a new numeric id.  May be used by multiple clients who are
+// sharing the same cache to partition the key space.  Typically the
+// client will allocate a new id at startup and prepend the id to
+// its cache keys.
 func (p *LRUCache) NewId() uint64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -76,6 +81,15 @@ func (p *LRUCache) NewId() uint64 {
 	return v
 }
 
+// Insert a mapping from key->value into the cache and assign it
+// the specified size against the total cache capacity.
+//
+// Return a handle that corresponds to the mapping.  The caller
+// must call handle.Release() when the returned mapping is no
+// longer needed.
+//
+// When the inserted entry is no longer needed, the key and
+// value will be passed to "deleter".
 func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) Handle {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -105,6 +119,11 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 	return h
 }
 
+// If the cache has no mapping for "key", returns nil, false.
+//
+// Else return a handle that corresponds to the mapping.  The caller
+// must call handle.Release() when the returned mapping is no
+// longer needed.
 func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -121,6 +140,9 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	return h, true
 }
 
+// If the cache contains entry for key, erase it.  Note that the
+// underlying entry will be kept around until all existing handles
+// to it have been released.
 func (p *LRUCache) Erase(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -242,6 +264,8 @@ func (p *LRUCache) checkCapacity() {
 	}
 }
 
+// Destroys all existing entries by calling the "deleter"
+// function that was passed to the constructor.
 func (p *LRUCache) Clear() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -257,6 +281,9 @@ func (p *LRUCache) Clear() error {
 	return nil
 }
 
+// Destroys all existing entries by calling the "deleter"
+// function that was passed to the constructor.
+// REQUIRES: all handles must have been released.
 func (p *LRUCache) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
