@@ -274,7 +274,7 @@ func (p *LRUCache) checkCapacity() {
 
 // Destroys all existing entries by calling the "deleter"
 // function that was passed to the constructor.
-func (p *LRUCache) Clear() error {
+func (p *LRUCache) Clear() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -286,7 +286,7 @@ func (p *LRUCache) Clear() error {
 	p.list = list.New()
 	p.table = make(map[string]*list.Element)
 	p.size = 0
-	return nil
+	return
 }
 
 // Destroys all existing entries by calling the "deleter"

@@ -6,12 +6,6 @@ package cache
 
 // Cache is a thread-safe cache.
 type Cache interface {
-	// Return a new numeric id.  May be used by multiple clients who are
-	// sharing the same cache to partition the key space.  Typically the
-	// client will allocate a new id at startup and prepend the id to
-	// its cache keys.
-	NewId() uint64
-
 	// Insert a mapping from key->value into the cache and assign it
 	// the specified size against the total cache capacity.
 	//
