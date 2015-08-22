@@ -54,3 +54,8 @@ type Handle interface {
 	// REQUIRES: cache must not have been closed yet.
 	Release()
 }
+
+// New creates a new empty cache with the given capacity.
+func New(capacity int64) Cache {
+	return NewLRUCache(capacity)
+}
