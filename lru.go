@@ -69,6 +69,7 @@ func (h *LRUHandle) Release() {
 
 // NewLRUCache creates a new empty cache with the given capacity.
 func NewLRUCache(capacity int64) *LRUCache {
+	assert(capacity > 0)
 	return &LRUCache{
 		list:     list.New(),
 		table:    make(map[string]*list.Element),
@@ -102,6 +103,7 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	assert(key != "" && size > 0)
 	if element := p.table[key]; element != nil {
 		p.list.Remove(element)
 		delete(p.table, key)
@@ -175,6 +177,7 @@ func (p *LRUCache) SetCapacity(capacity int64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	assert(capacity > 0)
 	p.capacity = capacity
 	p.checkCapacity()
 }
