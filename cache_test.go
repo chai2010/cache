@@ -192,3 +192,10 @@ func TestLRUCache_NewId(t *testing.T) {
 	b := cache.NewId()
 	tAssertNE(t, a, b)
 }
+
+func tAtoi(s string, defaultV int) int {
+	if v, err := strconv.Atoi(s); err == nil {
+		return v
+	}
+	return defaultV
+}
