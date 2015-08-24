@@ -5,6 +5,8 @@
 package cache
 
 // Cache is a thread-safe cache.
+//
+// See https://github.com/google/leveldb/blob/master/include/leveldb/cache.h
 type Cache interface {
 	// Insert a mapping from key->value into the cache and assign it
 	// the specified size against the total cache capacity.

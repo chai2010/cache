@@ -4,6 +4,8 @@
 
 package cache
 
+// See https://github.com/google/leveldb/blob/master/util/cache_test.cc
+
 import (
 	"strconv"
 	"testing"
