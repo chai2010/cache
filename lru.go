@@ -61,6 +61,13 @@ func (h *LRUHandle) Size() int {
 	return int(h.size)
 }
 
+func (h *LRUHandle) Retain() Handle {
+	h.c.mu.Lock()
+	defer h.c.mu.Unlock()
+	h.c.addref(h)
+	return h
+}
+
 func (h *LRUHandle) Release() {
 	h.c.mu.Lock()
 	defer h.c.mu.Unlock()
@@ -146,7 +153,7 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	p.list.MoveToFront(element)
 	h := element.Value.(*LRUHandle)
 	h.time_accessed = time.Now()
-	h.refs++
+	p.addref(h)
 	return h, true
 }
 
@@ -251,7 +258,10 @@ func (p *LRUCache) Keys() []string {
 	return keys
 }
 
-// must call h.c.mu.Lock() first!!!
+func (p *LRUCache) addref(h *LRUHandle) {
+	h.refs++
+}
+
 func (p *LRUCache) unref(h *LRUHandle) {
 	assert(h.refs > 0)
 	h.refs--
