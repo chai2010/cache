@@ -47,6 +47,33 @@ func ExampleCache() {
 	// deleter("100", "101")
 }
 
+func ExampleCache_getAndSet() {
+	cache := cache.NewLRUCache(100)
+	defer cache.Close()
+
+	// set dont return handle
+	cache.Set("key1", "value1", len("value1"))
+
+	// set's deleter is optional
+	cache.Set("key2", "value2", len("value2"), func(key string, value interface{}) {
+		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
+	})
+
+	h, ok := cache.Get("key1")
+	if !ok {
+		log.Fatal("not found key1")
+	}
+	if v := h.Value().(string); v != "value1" {
+		log.Fatal("not equal value1")
+	}
+	h.Release()
+
+	fmt.Println("Done")
+	// Output:
+	// Done
+	// deleter("key2", "value2")
+}
+
 func Example() {
 	cache := cache.NewLRUCache(100)
 	defer cache.Close()

@@ -84,6 +84,20 @@ func NewLRUCache(capacity int64) *LRUCache {
 	}
 }
 
+func (p *LRUCache) Get(key string) (Handle, bool) {
+	return p.Lookup(key)
+}
+
+func (p *LRUCache) Set(key string, value interface{}, size int, deleter ...func(key string, value interface{})) {
+	if len(deleter) > 0 {
+		h := p.Insert(key, value, size, deleter[0])
+		h.Release()
+	} else {
+		h := p.Insert(key, value, size, nil)
+		h.Release()
+	}
+}
+
 // Return a new numeric id.  May be used by multiple clients who are
 // sharing the same cache to partition the key space.  Typically the
 // client will allocate a new id at startup and prepend the id to
