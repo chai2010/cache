@@ -47,7 +47,7 @@ func ExampleCache() {
 	// deleter("100", "101")
 }
 
-func ExampleCache_getAndSet() {
+func ExampleLRUCache_getAndSet() {
 	cache := cache.NewLRUCache(100)
 	defer cache.Close()
 
