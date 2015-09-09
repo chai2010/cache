@@ -84,8 +84,14 @@ func NewLRUCache(capacity int64) *LRUCache {
 	}
 }
 
-func (p *LRUCache) Get(key string) (Handle, bool) {
-	return p.Lookup(key)
+func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
+	h, ok := p.Lookup(key)
+	if !ok {
+		return nil, false
+	}
+	value = h.Value()
+	h.Release()
+	return
 }
 
 func (p *LRUCache) Set(key string, value interface{}, size int, deleter ...func(key string, value interface{})) {

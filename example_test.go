@@ -59,14 +59,13 @@ func ExampleLRUCache_getAndSet() {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
 
-	h, ok := cache.Get("key1")
+	value, ok := cache.Get("key1")
 	if !ok {
 		log.Fatal("not found key1")
 	}
-	if v := h.Value().(string); v != "value1" {
+	if v := value.(string); v != "value1" {
 		log.Fatal("not equal value1")
 	}
-	h.Release()
 
 	fmt.Println("Done")
 	// Output:
