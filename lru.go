@@ -177,6 +177,27 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 	return h, true
 }
 
+// If the cache has no mapping for "key", returns nil, false.
+//
+// Else return a handle that corresponds to the mapping and erase it.
+// The caller must call handle.Release() when the returned mapping is no
+// longer needed.
+func (p *LRUCache) Take(key string) (Handle, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	element := p.table[key]
+	if element == nil {
+		return nil, false
+	}
+
+	p.list.Remove(element)
+	delete(p.table, key)
+
+	h := element.Value.(*LRUHandle)
+	return h, true
+}
+
 // If the cache contains entry for key, erase it.  Note that the
 // underlying entry will be kept around until all existing handles
 // to it have been released.
