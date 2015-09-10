@@ -94,6 +94,20 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	return
 }
 
+func (p *LRUCache) GetEasy(key string, defaultValue ...interface{}) interface{} {
+	h, ok := p.Lookup(key)
+	if !ok {
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		} else {
+			return nil
+		}
+	}
+	v := h.Value()
+	h.Release()
+	return v
+}
+
 func (p *LRUCache) Set(key string, value interface{}, size int, deleter ...func(key string, value interface{})) {
 	if len(deleter) > 0 {
 		h := p.Insert(key, value, size, deleter[0])
