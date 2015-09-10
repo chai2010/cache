@@ -11,8 +11,8 @@ import (
 	"github.com/chai2010/cache"
 )
 
-func Example() {
-	cache := cache.NewLRUCache(100)
+func ExampleCache() {
+	cache := cache.New(100)
 	defer cache.Close()
 
 	h1 := cache.Insert("100", "101", 1, func(key string, value interface{}) {
@@ -44,5 +44,34 @@ func Example() {
 	// v1: 101
 	// v2: 101
 	// Done
+	// deleter("100", "101")
+}
+
+func ExampleHandle() {
+	c := cache.New(1)
+	defer c.Close()
+
+	type Value struct {
+		V string
+	}
+
+	todoList := make(chan cache.Handle, 1)
+	h1 := c.Insert("100", &Value{V: "101"}, 1, func(key string, value interface{}) {
+		fmt.Printf("deleter(%q, %q)\n", key, value.(*Value).V)
+		value.(*Value).V = "nil"
+	})
+	fmt.Printf("h1: %s\n", h1.Value().(*Value).V)
+	todoList <- h1.Retain()
+	h1.Release()
+
+	c.Erase("100")
+
+	h2 := <-todoList
+	fmt.Printf("h2: %s\n", h2.Value().(*Value).V)
+	h2.Release()
+
+	// Output:
+	// h1: 101
+	// h2: 101
 	// deleter("100", "101")
 }
