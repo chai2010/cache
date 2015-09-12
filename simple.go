@@ -8,7 +8,7 @@ package main
 
 import (
 	"fmt"
-    "log"
+	"log"
 
 	"github.com/chai2010/cache"
 )
@@ -25,6 +25,13 @@ func main() {
 	if v := value.(string); v != "value1" {
 		log.Fatal("not equal value1")
 	}
+
+	cache.Set("key2", "value2", 1)
+	value2 := cache.Value("key2", "null").(string)
+	fmt.Println("key2:", value2)
+
+	value3 := cache.Value("key3", "null").(string)
+	fmt.Println("key3:", value3)
 
 	fmt.Println("Done")
 }

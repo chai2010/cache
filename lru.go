@@ -94,7 +94,7 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	return
 }
 
-func (p *LRUCache) GetEasy(key string, defaultValue ...interface{}) interface{} {
+func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
 	h, ok := p.Lookup(key)
 	if !ok {
 		if len(defaultValue) > 0 {
