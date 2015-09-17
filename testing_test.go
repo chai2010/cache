@@ -17,6 +17,69 @@ import (
 	"testing"
 )
 
+func tIsIntType(v interface{}) bool {
+	switch reflect.ValueOf(v).Kind() {
+	case reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64:
+		return true
+	}
+	return false
+}
+
+func tIsUintType(v interface{}) bool {
+	switch reflect.ValueOf(v).Kind() {
+	case reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64,
+		reflect.Uintptr:
+		return true
+	}
+	return false
+}
+
+func tIsFloatType(v interface{}) bool {
+	switch reflect.ValueOf(v).Kind() {
+	case reflect.Float32,
+		reflect.Float64:
+		return true
+	}
+	return false
+}
+
+func tIsNumberType(v interface{}) bool {
+	switch reflect.ValueOf(v).Kind() {
+	case reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64,
+		reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64,
+		reflect.Uintptr,
+		reflect.Float32,
+		reflect.Float64,
+		reflect.Complex64,
+		reflect.Complex128:
+		return true
+	}
+	return false
+}
+
+func tIsNumberEqual(a, b interface{}) bool {
+	if tIsNumberType(a) && tIsNumberType(b) {
+		return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+	}
+	return false
+}
+
 func tCallerFileLine(skip int) (file string, line int) {
 	_, file, line, ok := runtime.Caller(skip + 1)
 	if ok {
@@ -475,7 +538,7 @@ func tAssertNotPanic(t testing.TB, f func(), args ...interface{}) {
 }
 
 func tAssertEQ(t testing.TB, expected, got interface{}, args ...interface{}) {
-	if !reflect.DeepEqual(expected, got) {
+	if !reflect.DeepEqual(expected, got) && !tIsNumberEqual(expected, got) {
 		file, line := tCallerFileLine(1)
 		if msg := fmt.Sprint(args...); msg != "" {
 			t.Fatalf("%s:%d: tAssertEQ failed, expected = %v, got = %v, %s", file, line, expected, got, msg)
@@ -486,7 +549,7 @@ func tAssertEQ(t testing.TB, expected, got interface{}, args ...interface{}) {
 }
 
 func tAssertNE(t testing.TB, expected, got interface{}, args ...interface{}) {
-	if reflect.DeepEqual(expected, got) {
+	if reflect.DeepEqual(expected, got) || tIsNumberEqual(expected, got) {
 		file, line := tCallerFileLine(1)
 		if msg := fmt.Sprint(args...); msg != "" {
 			t.Fatalf("%s:%d: tAssertNE failed, expected = %v, got = %v, %s", file, line, expected, got, msg)
