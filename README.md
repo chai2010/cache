@@ -21,7 +21,6 @@ package main
 
 import (
 	"fmt"
-    "log"
 
 	"github.com/chai2010/cache"
 )
@@ -31,13 +30,8 @@ func main() {
 	defer cache.Close()
 
 	cache.Set("key1", "value1", 1)
-	value, ok := cache.Get("key1")
-	if !ok {
-		log.Fatal("not found key1")
-	}
-	if v := value.(string); v != "value1" {
-		log.Fatal("not equal value1")
-	}
+	value1 := cache.Value("key1").(string)
+	fmt.Println("key1:", value1)
 
 	cache.Set("key2", "value2", 1)
 	value2 := cache.Value("key2", "null").(string)
@@ -46,8 +40,21 @@ func main() {
 	value3 := cache.Value("key3", "null").(string)
 	fmt.Println("key3:", value3)
 
+	value4 := cache.Value("key4") // value4 is nil
+	fmt.Println("key4:", value4)
+
 	fmt.Println("Done")
 }
+```
+
+Output:
+
+```
+key1: value1
+key2: value2
+key3: null
+key4: <nil>
+Done
 ```
 
 ## Non GC Object
