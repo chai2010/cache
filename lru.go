@@ -126,9 +126,8 @@ func (p *LRUCache) NewId() uint64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	v := p.last_id
 	p.last_id++
-	return v
+	return p.last_id
 }
 
 // Insert a mapping from key->value into the cache and assign it

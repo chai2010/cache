@@ -155,9 +155,9 @@ func assert(v bool, a ...interface{}) {
 Output:
 
 ```
-id0: 0
-id1: 1
-id2: 2
+id0: 1
+id1: 2
+id2: 3
 user1(data:123)
 user2(data:123)
 invoke deleter(123) begin
