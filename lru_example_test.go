@@ -23,6 +23,29 @@ func ExampleLRUCache_simple() {
 	// key1: value1
 }
 
+func ExampleLRUCache_stack() {
+	cache := cache.NewLRUCache(100)
+	defer cache.Close()
+
+	cache.PushBack("key1", "value1", 1, nil)
+	cache.PushBack("key2", "value2", 1, nil)
+	cache.PushBack("key3", "value3", 1, nil)
+
+	fmt.Println("front:", cache.FrontValue().(string))
+	fmt.Println("back:", cache.BackValue().(string))
+
+	cache.RemoveFront()
+	cache.RemoveBack()
+	fmt.Println("front:", cache.FrontValue().(string))
+	fmt.Println("back:", cache.BackValue().(string))
+
+	// Output:
+	// front: value1
+	// back: value3
+	// front: value2
+	// back: value2
+}
+
 func ExampleLRUCache_handle() {
 	cache := cache.NewLRUCache(100)
 	defer cache.Close()
@@ -86,90 +109,6 @@ func ExampleLRUHandle() {
 	// h1: 101
 	// h2: 101
 	// deleter("100", "101")
-}
-
-func ExampleLRUHandle_Key() {
-	// TODO
-}
-
-func ExampleLRUHandle_Value() {
-	// TODO
-}
-
-func ExampleLRUHandle_Size() {
-	// TODO
-}
-
-func ExampleLRUHandle_Retain() {
-	// TODO
-}
-
-func ExampleLRUHandle_Release() {
-	// TODO
-}
-
-func ExampleLRUCache_Get() {
-	// TODO
-}
-
-func ExampleLRUCache_Value() {
-	// TODO
-}
-
-func ExampleLRUCache_Set() {
-	// TODO
-}
-
-func ExampleLRUCache_NewId() {
-	// TODO
-}
-
-func ExampleLRUCache_Insert() {
-	// TODO
-}
-
-func ExampleLRUCache_Lookup() {
-	// TODO
-}
-
-func ExampleLRUCache_Take() {
-	// TODO
-}
-
-func ExampleLRUCache_Erase() {
-	// TODO
-}
-
-func ExampleLRUCache_SetCapacity() {
-	// TODO
-}
-func ExampleLRUCache_Stats() {
-	// TODO
-}
-func ExampleLRUCache_StatsJSON() {
-	// TODO
-}
-func ExampleLRUCache_Length() {
-	// TODO
-}
-func ExampleLRUCache_Size() {
-	// TODO
-}
-func ExampleLRUCache_Capacity() {
-	// TODO
-}
-
-func ExampleLRUCache_Keys() {
-	// TODO
-}
-
-func ExampleLRUCache_Clear() {
-	// TODO
-}
-
-func ExampleLRUCache_Close() {
-	// TODO
-	// test panic
 }
 
 func ExampleLRUCache_getAndSet() {
