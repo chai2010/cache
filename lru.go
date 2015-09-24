@@ -288,6 +288,17 @@ func (p *LRUCache) Capacity() int64 {
 	return p.capacity
 }
 
+// Newest returns the insertion time of the newest element in the cache,
+// or a IsZero() time if cache is empty.
+func (p *LRUCache) Newest() (newest time.Time) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if frontElem := p.list.Front(); frontElem != nil {
+		newest = frontElem.Value.(*LRUHandle).time_accessed
+	}
+	return
+}
+
 // Oldest returns the insertion time of the oldest element in the cache,
 // or a IsZero() time if cache is empty.
 func (p *LRUCache) Oldest() (oldest time.Time) {
