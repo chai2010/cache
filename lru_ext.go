@@ -9,22 +9,22 @@ import (
 	"time"
 )
 
-func (p *LRUCache) FrontKey() (key string, ok bool) {
+func (p *LRUCache) FrontKey() (key string) {
 	if h := p.Front(); h != nil {
 		key = h.Key()
 		h.Release()
-		return key, true
+		return key
 	}
-	return "", false
+	return ""
 }
 
-func (p *LRUCache) BackKey() (key string, ok bool) {
+func (p *LRUCache) BackKey() (key string) {
 	if h := p.Back(); h != nil {
 		key = h.Key()
 		h.Release()
-		return key, true
+		return key
 	}
-	return "", false
+	return ""
 }
 
 func (p *LRUCache) FrontValue(defaultValue ...interface{}) (value interface{}) {

@@ -31,17 +31,22 @@ func ExampleLRUCache_stack() {
 	cache.PushBack("key2", "value2", 1, nil)
 	cache.PushBack("key3", "value3", 1, nil)
 
-	fmt.Println("front:", cache.FrontValue().(string))
-	fmt.Println("back:", cache.BackValue().(string))
+	fmt.Println("front key:", cache.FrontKey())
+	fmt.Println("front value:", cache.FrontValue().(string))
+	fmt.Println("back key:", cache.BackKey())
+	fmt.Println("back value:", cache.BackValue().(string))
 
 	cache.RemoveFront()
 	cache.RemoveBack()
+
 	fmt.Println("front:", cache.FrontValue().(string))
 	fmt.Println("back:", cache.BackValue().(string))
 
 	// Output:
-	// front: value1
-	// back: value3
+	// front key: key1
+	// front value: value1
+	// back key: key3
+	// back value: value3
 	// front: value2
 	// back: value2
 }
