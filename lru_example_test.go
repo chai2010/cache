@@ -7,6 +7,8 @@ package cache_test
 import (
 	"fmt"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/chai2010/cache"
 )
@@ -49,6 +51,62 @@ func ExampleLRUCache_stack() {
 	// back value: value3
 	// front: value2
 	// back: value2
+}
+
+func ExampleLRUCache_realtimeTodoWorker() {
+	result := make(map[int]int)
+
+	todo := cache.NewLRUCache(8) // max todo size
+	defer todo.Close()
+
+	var wg sync.WaitGroup
+	var closed = make(chan bool)
+
+	// background worker
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-closed:
+					return
+				default:
+					if h := todo.PopFront(); h != nil {
+						h.Value().(func())()
+						h.Release()
+					}
+				}
+			}
+		}()
+	}
+
+	// gen todo list
+	for i := 0; i < 10; i++ {
+		id := i
+		if _, ok := result[id]; !ok {
+			todo.PushFront(
+				fmt.Sprintf("id:%d", id),
+				func() { time.Sleep(time.Second / 10); result[id] = id * 1000 },
+				1,
+				nil,
+			)
+		}
+	}
+	time.Sleep(time.Second)
+
+	// print result
+	// todo work is a realtime worker, maybe lost work
+	for k, v := range result {
+		fmt.Printf("result[%d]:%d\n", k, v)
+		time.Sleep(time.Second / 10)
+	}
+
+	// wait
+	close(closed)
+	wg.Wait()
+
+	// ingore output
 }
 
 func ExampleLRUCache_handle() {
