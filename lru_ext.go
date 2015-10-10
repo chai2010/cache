@@ -107,12 +107,13 @@ func (p *LRUCache) PushFront(key string, value interface{}, size int, deleter fu
 	}
 
 	h := &LRUHandle{
-		c:       p,
-		key:     key,
-		value:   value,
-		size:    int64(size),
-		deleter: deleter,
-		refs:    1, // Only one from LRUCache, no returned handle
+		c:            p,
+		key:          key,
+		value:        value,
+		size:         int64(size),
+		deleter:      deleter,
+		time_created: time.Now(),
+		refs:         1, // Only one from LRUCache, no returned handle
 	}
 	h.time_accessed.Store(time.Now())
 
@@ -137,12 +138,13 @@ func (p *LRUCache) PushBack(key string, value interface{}, size int, deleter fun
 	}
 
 	h := &LRUHandle{
-		c:       p,
-		key:     key,
-		value:   value,
-		size:    int64(size),
-		deleter: deleter,
-		refs:    1, // Only one from LRUCache, no returned handle
+		c:            p,
+		key:          key,
+		value:        value,
+		size:         int64(size),
+		deleter:      deleter,
+		time_created: time.Now(),
+		refs:         1, // Only one from LRUCache, no returned handle
 	}
 	h.time_accessed.Store(time.Now())
 

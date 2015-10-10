@@ -46,6 +46,7 @@ type LRUHandle struct {
 	value         interface{}
 	size          int64
 	deleter       func(key string, value interface{})
+	time_created  time.Time
 	time_accessed atomic.Value // time.Time
 	refs          uint32
 }
@@ -61,14 +62,16 @@ func (h *LRUHandle) Value() interface{} {
 func (h *LRUHandle) Size() int {
 	return int(h.size)
 }
+func (h *LRUHandle) TimeCreated() time.Time {
+	return h.time_created
+}
 
 func (h *LRUHandle) TimeAccessed() time.Time {
 	return h.time_accessed.Load().(time.Time)
 }
 
 func (h *LRUHandle) Expired(timeToLive time.Duration) bool {
-	t := h.time_accessed.Load().(time.Time)
-	return t.Add(timeToLive).Before(time.Now())
+	return h.time_created.Before(time.Now())
 }
 
 func (h *LRUHandle) Retain() Handle {
@@ -171,12 +174,13 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 	}
 
 	h := &LRUHandle{
-		c:       p,
-		key:     key,
-		value:   value,
-		size:    int64(size),
-		deleter: deleter,
-		refs:    2, // One from LRUCache, one for the returned handle
+		c:            p,
+		key:          key,
+		value:        value,
+		size:         int64(size),
+		deleter:      deleter,
+		time_created: time.Now(),
+		refs:         2, // One from LRUCache, one for the returned handle
 	}
 	h.time_accessed.Store(time.Now())
 
