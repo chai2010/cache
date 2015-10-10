@@ -74,6 +74,14 @@ func (h *LRUHandle) Release() {
 	h.c.unref(h)
 }
 
+// match for io.Closer, same as h.Release.
+func (h *LRUHandle) Close() error {
+	h.c.mu.Lock()
+	defer h.c.mu.Unlock()
+	h.c.unref(h)
+	return nil
+}
+
 // NewLRUCache creates a new empty cache with the given capacity.
 func NewLRUCache(capacity int64) *LRUCache {
 	assert(capacity > 0)
