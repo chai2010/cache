@@ -8,6 +8,7 @@ import (
 	"container/list"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -45,7 +46,7 @@ type LRUHandle struct {
 	value         interface{}
 	size          int64
 	deleter       func(key string, value interface{})
-	time_accessed time.Time
+	time_accessed atomic.Value // time.Time
 	refs          uint32
 }
 
@@ -59,6 +60,15 @@ func (h *LRUHandle) Value() interface{} {
 
 func (h *LRUHandle) Size() int {
 	return int(h.size)
+}
+
+func (h *LRUHandle) TimeAccessed() time.Time {
+	return h.time_accessed.Load().(time.Time)
+}
+
+func (h *LRUHandle) Expired(timeToLive time.Duration) bool {
+	t := h.time_accessed.Load().(time.Time)
+	return t.Add(timeToLive).Before(time.Now())
 }
 
 func (h *LRUHandle) Retain() Handle {
@@ -161,14 +171,14 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 	}
 
 	h := &LRUHandle{
-		c:             p,
-		key:           key,
-		value:         value,
-		size:          int64(size),
-		deleter:       deleter,
-		time_accessed: time.Now(),
-		refs:          2, // One from LRUCache, one for the returned handle
+		c:       p,
+		key:     key,
+		value:   value,
+		size:    int64(size),
+		deleter: deleter,
+		refs:    2, // One from LRUCache, one for the returned handle
 	}
+	h.time_accessed.Store(time.Now())
 
 	element := p.list.PushFront(h)
 	p.table[key] = element
@@ -193,7 +203,7 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 
 	p.list.MoveToFront(element)
 	h := element.Value.(*LRUHandle)
-	h.time_accessed = time.Now()
+	h.time_accessed.Store(time.Now())
 	p.addref(h)
 	return h, true
 }
@@ -256,7 +266,7 @@ func (p *LRUCache) Stats() (length, size, capacity int64, oldest time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if lastElem := p.list.Back(); lastElem != nil {
-		oldest = lastElem.Value.(*LRUHandle).time_accessed
+		oldest = lastElem.Value.(*LRUHandle).time_accessed.Load().(time.Time)
 	}
 	return int64(p.list.Len()), p.size, p.capacity, oldest
 }
@@ -302,7 +312,7 @@ func (p *LRUCache) Newest() (newest time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if frontElem := p.list.Front(); frontElem != nil {
-		newest = frontElem.Value.(*LRUHandle).time_accessed
+		newest = frontElem.Value.(*LRUHandle).time_accessed.Load().(time.Time)
 	}
 	return
 }
@@ -313,7 +323,7 @@ func (p *LRUCache) Oldest() (oldest time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if lastElem := p.list.Back(); lastElem != nil {
-		oldest = lastElem.Value.(*LRUHandle).time_accessed
+		oldest = lastElem.Value.(*LRUHandle).time_accessed.Load().(time.Time)
 	}
 	return
 }
