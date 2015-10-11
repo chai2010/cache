@@ -186,9 +186,27 @@ func (p *LRUCache) PopFront() (h *LRUHandle) {
 }
 
 func (p *LRUCache) MoveToFront(key string) {
-	panic("TODO")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	element := p.table[key]
+	if element == nil {
+		return
+	}
+
+	p.list.MoveToFront(element)
+	return
 }
 
 func (p *LRUCache) MoveToBack(key string) {
-	panic("TODO")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	element := p.table[key]
+	if element == nil {
+		return
+	}
+
+	p.list.MoveToBack(element)
+	return
 }
