@@ -70,10 +70,6 @@ func (h *LRUHandle) TimeAccessed() time.Time {
 	return h.time_accessed.Load().(time.Time)
 }
 
-func (h *LRUHandle) Expired(timeToLive time.Duration) bool {
-	return h.time_created.Before(time.Now())
-}
-
 func (h *LRUHandle) Retain() Handle {
 	h.c.mu.Lock()
 	defer h.c.mu.Unlock()
