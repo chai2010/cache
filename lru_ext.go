@@ -184,3 +184,11 @@ func (p *LRUCache) PopFront() (h *LRUHandle) {
 	p.list.Remove(element)
 	return
 }
+
+func (p *LRUCache) MoveToFront(key string) {
+	panic("TODO")
+}
+
+func (p *LRUCache) MoveToBack(key string) {
+	panic("TODO")
+}
