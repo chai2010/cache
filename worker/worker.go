@@ -37,14 +37,18 @@ func (p *_WorkerItem) IsDone() bool {
 	return p.done
 }
 
-func (p *_WorkerItem) DoTask() {
+func (p *_WorkerItem) SetDone() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.done = true
+	p.mu.Unlock()
+}
 
-	if !p.done && p.task != nil {
-		p.done = true
-		p.task()
+func (p *_WorkerItem) DoTask() {
+	if p.IsDone() || p.task == nil {
+		return
 	}
+	p.SetDone()
+	p.task()
 }
 
 func NewWorker(taskCacheSize int) *Worker {
