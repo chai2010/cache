@@ -7,33 +7,39 @@ package limit
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/chai2010/cache"
 )
 
+type Logger interface {
+	Printf(format string, v ...interface{})
+}
+
 type Opener struct {
-	open  func(name string) (f interface{}, err error)
-	close func(f interface{}) error
-	cache *cache.LRUCache
-	limit chan int // buffered chan
-	wg    sync.WaitGroup
-	mu    sync.Mutex
+	logger Logger
+	open   func(name string) (f interface{}, err error)
+	close  func(f interface{}) error
+	cache  *cache.LRUCache
+	limit  chan int // buffered chan
+	wg     sync.WaitGroup
+	mu     sync.Mutex
 }
 
 func NewOpener(
 	open func(name string) (f interface{}, err error),
 	close func(f interface{}) error,
 	capacity int,
+	log Logger,
 ) *Opener {
 	assert(capacity > 0)
 
 	p := &Opener{
-		open:  open,
-		close: close,
-		cache: cache.NewLRUCache(int64(capacity)),
-		limit: make(chan int, capacity),
+		open:   open,
+		close:  close,
+		cache:  cache.NewLRUCache(int64(capacity)),
+		limit:  make(chan int, capacity),
+		logger: log,
 	}
 	p.wg.Add(1)
 	return p
@@ -78,7 +84,9 @@ func (p *Opener) Open(name string) (f interface{}, h cache.Handle, err error) {
 	// put to cache
 	h = p.cache.Insert(name, f, 1, func(key string, value interface{}) {
 		if err := p.close(value); err != nil {
-			log.Printf("limit: Opener.close(key=%q) failed, err = %v\n", err)
+			if p.logger != nil {
+				p.logger.Printf("limit: Opener.close(key=%q) failed, err = %v\n", err)
+			}
 		}
 		p.wg.Done()
 		<-p.limit
