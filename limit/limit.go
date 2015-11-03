@@ -32,6 +32,8 @@ func NewOpener(
 	capacity int,
 	log Logger,
 ) *Opener {
+	assert(open != nil)
+	assert(close != nil)
 	assert(capacity > 0)
 
 	p := &Opener{
@@ -53,6 +55,8 @@ func (p *Opener) Close() error {
 }
 
 func (p *Opener) Open(name string) (f interface{}, h cache.Handle, err error) {
+	assert(name != "")
+
 	// get from cache
 	h, ok := p.cache.Lookup(name)
 	if ok {
