@@ -42,8 +42,8 @@ func TestOpener(t *testing.T) {
 	tAssert(t, f4 == nil)
 	tAssert(t, h4 == nil)
 
-	_ = f1
-	_ = f2
-	_ = f3
-	_ = f4
+	_ = f1.(*os.File)
+	_ = f2.(*os.File)
+	_ = f3.(*os.File)
+	_ = f4 // f4 is nil
 }

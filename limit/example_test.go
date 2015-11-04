@@ -38,9 +38,9 @@ func Example() {
 	_, _, err = limitOpener.Open("unknown.go")
 	assert(err != nil)
 
-	_ = f1
-	_ = f2
-	_ = f3
+	_ = f1.(*os.File)
+	_ = f2.(*os.File)
+	_ = f3.(*os.File)
 
 	h1.Release()
 	h2.Release()
