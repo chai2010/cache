@@ -6,10 +6,15 @@
 package limit
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/chai2010/cache"
+)
+
+var (
+	ErrLimit = errors.New("limit: limit error!")
 )
 
 type Logger interface {
@@ -69,8 +74,7 @@ func (p *Opener) Open(name string) (f interface{}, h cache.Handle, err error) {
 	case p.limit <- 1:
 		p.wg.Add(1)
 	default:
-		err = fmt.Errorf("limit: Opener.Open(name=%q): limit error!", name)
-		return
+		return nil, nil, ErrLimit
 	}
 
 	defer func() {
