@@ -30,6 +30,7 @@ func Example() {
 
 	f2, h2, err := limitOpener.Open("limit.go")
 	assert(err == nil)
+	assert(f2 == f1)
 
 	f3, h3, err := limitOpener.Open("example_test.go")
 	assert(err == nil)
