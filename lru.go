@@ -111,13 +111,19 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	return
 }
 
-func (p *LRUCache) MustGet(key string, getter func(key string) (v interface{}, size int)) (value interface{}) {
+func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, size int, err error)) (value interface{}, err error) {
 	if h, ok := p.Lookup(key); ok {
 		value = h.Value()
 		h.Release()
 		return
 	}
-	value, size := getter(key)
+	if getter == nil {
+		return nil, fmt.Errorf("cache: %q not found!", key)
+	}
+	value, size, err := getter(key)
+	if err != nil {
+		return
+	}
 	assert(size > 0)
 	p.Set(key, value, size)
 	return
