@@ -111,6 +111,18 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	return
 }
 
+func (p *LRUCache) MustGet(key string, getter func(key string) (v interface{}, size int)) (value interface{}) {
+	if h, ok := p.Lookup(key); ok {
+		value = h.Value()
+		h.Release()
+		return
+	}
+	value, size := getter(key)
+	assert(size > 0)
+	p.Set(key, value, size)
+	return
+}
+
 func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
 	h, ok := p.Lookup(key)
 	if !ok {
