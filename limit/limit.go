@@ -64,10 +64,8 @@ func (p *Opener) Open(name string) (f interface{}, h io.Closer, err error) {
 	assert(name != "")
 
 	// get from cache
-	h, ok := p.cache.Lookup(name)
-	if ok {
-		f = h.(cache.Handle).Value()
-		return
+	if f, h = p.cache.Lookup(name); h != nil {
+		return f, h, nil
 	}
 
 	// limit opened files
