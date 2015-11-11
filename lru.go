@@ -169,6 +169,12 @@ func (p *LRUCache) NewId() uint64 {
 // When the inserted entry is no longer needed, the key and
 // value will be passed to "deleter".
 func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) (handle io.Closer) {
+	handle = p.Insert_(key, value, size, deleter)
+	return
+}
+
+// Insert_ same as Insert, but return *LRUHandle.
+func (p *LRUCache) Insert_(key string, value interface{}, size int, deleter func(key string, value interface{})) (handle *LRUHandle) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -205,6 +211,12 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 // must call handle.Close() when the returned mapping is no
 // longer needed.
 func (p *LRUCache) Lookup(key string) (handle io.Closer, ok bool) {
+	handle, ok = p.Lookup_(key)
+	return
+}
+
+// Lookup_ same as Lookup, but return *LRUHandle.
+func (p *LRUCache) Lookup_(key string) (handle io.Closer, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
