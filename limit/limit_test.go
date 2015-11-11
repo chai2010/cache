@@ -25,17 +25,17 @@ func TestOpener(t *testing.T) {
 
 	f1, h1, err := limitOpener.Open("limit.go")
 	tAssertNil(t, err)
-	defer h1.Release()
+	defer h1.Close()
 
 	f2, h2, err := limitOpener.Open("limit.go")
 	tAssertNil(t, err)
-	defer h2.Release()
+	defer h2.Close()
 
 	tAssert(t, f2 == f1)
 
 	f3, h3, err := limitOpener.Open("example_test.go")
 	tAssertNil(t, err)
-	defer h3.Release()
+	defer h3.Close()
 
 	f4, h4, err := limitOpener.Open("testing_test.go")
 	tAssert(t, err == ErrLimit)

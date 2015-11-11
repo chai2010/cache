@@ -42,9 +42,9 @@ func Example() {
 	_ = f2.(*os.File)
 	_ = f3.(*os.File)
 
-	h1.Release()
-	h2.Release()
-	h3.Release()
+	h1.Close()
+	h2.Close()
+	h3.Close()
 }
 
 func assert(v bool, a ...interface{}) {

@@ -8,6 +8,7 @@ package limit
 import (
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/chai2010/cache"
@@ -59,13 +60,13 @@ func (p *Opener) Close() error {
 	return nil
 }
 
-func (p *Opener) Open(name string) (f interface{}, h cache.Handle, err error) {
+func (p *Opener) Open(name string) (f interface{}, h io.Closer, err error) {
 	assert(name != "")
 
 	// get from cache
 	h, ok := p.cache.Lookup(name)
 	if ok {
-		f = h.Value()
+		f = h.(cache.Handle).Value()
 		return
 	}
 
