@@ -116,24 +116,22 @@ func ExampleLRUCache_handle() {
 	h1 := c.Insert("100", "101", 1, func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
-	v1 := h1.(cache.Handle).Value().(string)
+	v1 := h1.(*cache.LRUHandle).Value().(string)
 	fmt.Printf("v1: %s\n", v1)
 	h1.Close()
 
-	h2, ok := c.Lookup("100")
-	if !ok {
+	v2, h2 := c.Lookup("100")
+	if h2 == nil {
 		log.Fatal("lookup failed!")
 	}
 	defer h2.Close()
 
 	// h2 still valid after Erase
 	c.Erase("100")
-	v2 := h2.(cache.Handle).Value().(string)
-	fmt.Printf("v2: %s\n", v2)
+	fmt.Printf("v2: %s\n", v2.(string))
 
 	// but new lookup will failed
-	_, ok = c.Lookup("100")
-	if ok {
+	if _, h := c.Lookup("100"); h != nil {
 		log.Fatal("lookup succeed!")
 	}
 
@@ -153,13 +151,13 @@ func ExampleLRUHandle() {
 		V string
 	}
 
-	todoList := make(chan cache.Handle, 1)
+	todoList := make(chan *cache.LRUHandle, 1)
 	h1 := c.Insert("100", &Value{V: "101"}, 1, func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(*Value).V)
 		value.(*Value).V = "nil"
 	})
-	fmt.Printf("h1: %s\n", h1.(cache.Handle).Value().(*Value).V)
-	todoList <- h1.(cache.Handle).Retain().(cache.Handle)
+	fmt.Printf("h1: %s\n", h1.(*cache.LRUHandle).Value().(*Value).V)
+	todoList <- h1.(*cache.LRUHandle).Retain()
 	h1.Close()
 
 	c.Erase("100")

@@ -82,25 +82,25 @@ func main() {
 	fmt.Println("id2:", id2)
 
 	// add new
+	v1 := "data:123"
 	h1 := c.Insert("123", "data:123", len("data:123"), func(key string, value interface{}) {
 		fmt.Printf("deleter(%q:%q)\n", key, value)
 	})
 
 	// fetch ok
-	h2, ok := c.Lookup("123")
-	assert(ok)
+	v2, h2 := c.Lookup("123")
+	assert(h2 != nil)
 
 	// remove
 	c.Erase("123")
 
 	// fetch failed
-	h3, ok := c.Lookup("123")
+	_, h3 := c.Lookup("123")
 	assert(h3 == nil)
-	assert(!ok)
 
 	// h1&h2 still valid!
-	fmt.Printf("user1(%s)\n", h1.(cache.Handle).Value().(string))
-	fmt.Printf("user2(%s)\n", h2.(cache.Handle).Value().(string))
+	fmt.Printf("user1(%s)\n", v1)
+	fmt.Printf("user2(%s)\n", v2.(string))
 
 	// release h1
 	// because the h2 handle the value, so the deleter is not ivoked!

@@ -69,7 +69,7 @@ func (h *LRUHandle) TimeAccessed() time.Time {
 	return h.time_accessed.Load().(time.Time)
 }
 
-func (h *LRUHandle) Retain() (handle io.Closer) {
+func (h *LRUHandle) Retain() (handle *LRUHandle) {
 	h.c.mu.Lock()
 	defer h.c.mu.Unlock()
 	h.c.addref(h)
@@ -95,6 +95,7 @@ func NewLRUCache(capacity int64) *LRUCache {
 
 func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	if v, h := p.Lookup(key); h != nil {
+		h.Close()
 		return v, true
 	}
 	return
@@ -102,6 +103,7 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 
 func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, size int, err error)) (value interface{}, err error) {
 	if v, h := p.Lookup(key); h != nil {
+		h.Close()
 		return v, nil
 	}
 	if getter == nil {
@@ -118,6 +120,7 @@ func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, s
 
 func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
 	if v, h := p.Lookup(key); h != nil {
+		h.Close()
 		return v
 	}
 	if len(defaultValue) > 0 {
@@ -201,7 +204,10 @@ func (p *LRUCache) Insert_(key string, value interface{}, size int, deleter func
 // must call handle.Close() when the returned mapping is no
 // longer needed.
 func (p *LRUCache) Lookup(key string) (value interface{}, handle io.Closer) {
-	value, handle = p.Lookup_(key)
+	// warning: (*LRUHandle)(nil) != (io.Closer)(nil)
+	if v, h := p.Lookup_(key); h != nil {
+		return v, h
+	}
 	return
 }
 

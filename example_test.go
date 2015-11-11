@@ -18,24 +18,23 @@ func Example() {
 	h1 := c.Insert("100", "101", 1, func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
-	v1 := h1.(cache.Handle).Value().(string)
+	v1 := h1.(*cache.LRUHandle).Value().(string)
 	fmt.Printf("v1: %s\n", v1)
 	h1.Close()
 
-	h2, ok := c.Lookup("100")
-	if !ok {
+	_, h2 := c.Lookup("100")
+	if h2 == nil {
 		log.Fatal("lookup failed!")
 	}
 	defer h2.Close()
 
 	// h2 still valid after Erase
 	c.Erase("100")
-	v2 := h2.(cache.Handle).Value().(string)
+	v2 := h2.(*cache.LRUHandle).Value().(string)
 	fmt.Printf("v2: %s\n", v2)
 
 	// but new lookup will failed
-	_, ok = c.Lookup("100")
-	if ok {
+	if _, h := c.Lookup("100"); h != nil {
 		log.Fatal("lookup succeed!")
 	}
 

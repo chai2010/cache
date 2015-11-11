@@ -41,12 +41,11 @@ func (p *TCache) Insert(key, value int, size ...int) {
 }
 
 func (p *TCache) Lookup(key int) int {
-	h, ok := p.LRUCache.Lookup(strconv.Itoa(key))
-	if !ok {
-		return -1
+	if v, h := p.LRUCache.Lookup(strconv.Itoa(key)); h != nil {
+		h.Close()
+		return v.(int)
 	}
-	defer h.Close()
-	return h.(Handle).Value().(int)
+	return -1
 }
 
 func (p *TCache) Erase(key int) {
@@ -106,12 +105,12 @@ func TestLRUCache_entriesArePinned(t *testing.T) {
 	defer cache.Close()
 
 	cache.Insert(100, 101)
-	h1, _ := cache.LRUCache.Lookup(strconv.Itoa(100))
-	tAssertEQ(t, 101, h1.(Handle).Value().(int))
+	v, h1 := cache.LRUCache.Lookup(strconv.Itoa(100))
+	tAssertEQ(t, 101, v.(int))
 
 	cache.Insert(100, 102)
-	h2, _ := cache.LRUCache.Lookup(strconv.Itoa(100))
-	tAssertEQ(t, 102, h2.(Handle).Value().(int))
+	v, h2 := cache.LRUCache.Lookup(strconv.Itoa(100))
+	tAssertEQ(t, 102, v.(int))
 	tAssertEQ(t, 0, len(cache.deleted_keys_))
 
 	h1.Close()
