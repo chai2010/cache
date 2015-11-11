@@ -13,10 +13,8 @@ import (
 	"time"
 )
 
-var (
-	_ Cache  = (*LRUCache)(nil)
-	_ Handle = (*LRUHandle)(nil)
-)
+// assert match interface
+var _ Cache = (*LRUCache)(nil)
 
 // LRUCache is a typical LRU cache implementation.  If the cache
 // reaches the capacity, the least recently used item is deleted from
@@ -96,20 +94,15 @@ func NewLRUCache(capacity int64) *LRUCache {
 }
 
 func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
-	h, ok := p.Lookup(key)
-	if !ok {
-		return nil, false
+	if v, h := p.Lookup(key); h != nil {
+		return v, true
 	}
-	value = h.(Handle).Value()
-	h.Close()
 	return
 }
 
 func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, size int, err error)) (value interface{}, err error) {
-	if h, ok := p.Lookup(key); ok {
-		value = h.(Handle).Value()
-		h.Close()
-		return
+	if v, h := p.Lookup(key); h != nil {
+		return v, nil
 	}
 	if getter == nil {
 		return nil, fmt.Errorf("cache: %q not found!", key)
@@ -124,17 +117,14 @@ func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, s
 }
 
 func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
-	h, ok := p.Lookup(key)
-	if !ok {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		} else {
-			return nil
-		}
+	if v, h := p.Lookup(key); h != nil {
+		return v
 	}
-	v := h.(Handle).Value()
-	h.Close()
-	return v
+	if len(defaultValue) > 0 {
+		return defaultValue[0]
+	} else {
+		return nil
+	}
 }
 
 func (p *LRUCache) Set(key string, value interface{}, size int, deleter ...func(key string, value interface{})) {
@@ -205,31 +195,31 @@ func (p *LRUCache) Insert_(key string, value interface{}, size int, deleter func
 	return h
 }
 
-// If the cache has no mapping for "key", returns nil, false.
+// If the cache has no mapping for "key", returns nil, nil.
 //
 // Else return a handle that corresponds to the mapping.  The caller
 // must call handle.Close() when the returned mapping is no
 // longer needed.
-func (p *LRUCache) Lookup(key string) (handle io.Closer, ok bool) {
-	handle, ok = p.Lookup_(key)
+func (p *LRUCache) Lookup(key string) (value interface{}, handle io.Closer) {
+	value, handle = p.Lookup_(key)
 	return
 }
 
 // Lookup_ same as Lookup, but return *LRUHandle.
-func (p *LRUCache) Lookup_(key string) (handle *LRUHandle, ok bool) {
+func (p *LRUCache) Lookup_(key string) (value interface{}, handle *LRUHandle) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	element := p.table[key]
 	if element == nil {
-		return nil, false
+		return nil, nil
 	}
 
 	p.list.MoveToFront(element)
 	h := element.Value.(*LRUHandle)
 	h.time_accessed.Store(time.Now())
 	p.addref(h)
-	return h, true
+	return h.Value(), h
 }
 
 // If the cache has no mapping for "key", returns nil, false.
