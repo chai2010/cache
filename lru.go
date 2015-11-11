@@ -216,7 +216,7 @@ func (p *LRUCache) Lookup(key string) (handle io.Closer, ok bool) {
 }
 
 // Lookup_ same as Lookup, but return *LRUHandle.
-func (p *LRUCache) Lookup_(key string) (handle io.Closer, ok bool) {
+func (p *LRUCache) Lookup_(key string) (handle *LRUHandle, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
