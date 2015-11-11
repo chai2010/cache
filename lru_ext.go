@@ -12,7 +12,7 @@ import (
 func (p *LRUCache) FrontKey() (key string) {
 	if h := p.Front(); h != nil {
 		key = h.Key()
-		h.Release()
+		h.Close()
 		return key
 	}
 	return ""
@@ -21,7 +21,7 @@ func (p *LRUCache) FrontKey() (key string) {
 func (p *LRUCache) BackKey() (key string) {
 	if h := p.Back(); h != nil {
 		key = h.Key()
-		h.Release()
+		h.Close()
 		return key
 	}
 	return ""
@@ -30,7 +30,7 @@ func (p *LRUCache) BackKey() (key string) {
 func (p *LRUCache) FrontValue(defaultValue ...interface{}) (value interface{}) {
 	if h := p.Front(); h != nil {
 		value = h.Value()
-		h.Release()
+		h.Close()
 		return
 	}
 	if len(defaultValue) > 0 {
@@ -43,7 +43,7 @@ func (p *LRUCache) FrontValue(defaultValue ...interface{}) (value interface{}) {
 func (p *LRUCache) BackValue(defaultValue ...interface{}) (value interface{}) {
 	if h := p.Back(); h != nil {
 		value = h.Value()
-		h.Release()
+		h.Close()
 		return
 	}
 	if len(defaultValue) > 0 {
@@ -55,13 +55,13 @@ func (p *LRUCache) BackValue(defaultValue ...interface{}) (value interface{}) {
 
 func (p *LRUCache) RemoveFront() {
 	if h := p.PopFront(); h != nil {
-		h.Release()
+		h.Close()
 	}
 }
 
 func (p *LRUCache) RemoveBack() {
 	if h := p.PopBack(); h != nil {
-		h.Release()
+		h.Close()
 	}
 }
 

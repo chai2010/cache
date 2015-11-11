@@ -12,29 +12,29 @@ import (
 )
 
 func ExampleCache() {
-	cache := cache.New(100)
-	defer cache.Close()
+	c := cache.New(100)
+	defer c.Close()
 
-	h1 := cache.Insert("100", "101", 1, func(key string, value interface{}) {
+	h1 := c.Insert("100", "101", 1, func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
-	v1 := h1.Value().(string)
+	v1 := h1.(cache.Handle).Value().(string)
 	fmt.Printf("v1: %s\n", v1)
-	h1.Release()
+	h1.Close()
 
-	h2, ok := cache.Lookup("100")
+	h2, ok := c.Lookup("100")
 	if !ok {
 		log.Fatal("lookup failed!")
 	}
-	defer h2.Release()
+	defer h2.Close()
 
 	// h2 still valid after Erase
-	cache.Erase("100")
-	v2 := h2.Value().(string)
+	c.Erase("100")
+	v2 := h2.(cache.Handle).Value().(string)
 	fmt.Printf("v2: %s\n", v2)
 
 	// but new lookup will failed
-	_, ok = cache.Lookup("100")
+	_, ok = c.Lookup("100")
 	if ok {
 		log.Fatal("lookup succeed!")
 	}
@@ -60,15 +60,15 @@ func ExampleHandle() {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(*Value).V)
 		value.(*Value).V = "nil"
 	})
-	fmt.Printf("h1: %s\n", h1.Value().(*Value).V)
-	todoList <- h1.Retain()
-	h1.Release()
+	fmt.Printf("h1: %s\n", h1.(cache.Handle).Value().(*Value).V)
+	todoList <- h1.(cache.Handle).Retain().(cache.Handle)
+	h1.Close()
 
 	c.Erase("100")
 
 	h2 := <-todoList
-	fmt.Printf("h2: %s\n", h2.Value().(*Value).V)
-	h2.Release()
+	fmt.Printf("h2: %s\n", h2.(cache.Handle).Value().(*Value).V)
+	h2.Close()
 
 	// Output:
 	// h1: 101

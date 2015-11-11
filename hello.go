@@ -13,75 +13,75 @@ import (
 )
 
 func main() {
-	cache := cache.NewLRUCache(10)
-	defer cache.Close()
+	c := cache.NewLRUCache(10)
+	defer c.Close()
 
-	id0 := cache.NewId()
-	id1 := cache.NewId()
-	id2 := cache.NewId()
+	id0 := c.NewId()
+	id1 := c.NewId()
+	id2 := c.NewId()
 	fmt.Println("id0:", id0)
 	fmt.Println("id1:", id1)
 	fmt.Println("id2:", id2)
 
 	// add new
-	h1 := cache.Insert("123", "data:123", len("data:123"), func(key string, value interface{}) {
+	h1 := c.Insert("123", "data:123", len("data:123"), func(key string, value interface{}) {
 		fmt.Printf("deleter(%q:%q)\n", key, value)
 	})
 
 	// fetch ok
-	h2, ok := cache.Lookup("123")
+	h2, ok := c.Lookup("123")
 	assert(ok)
 
 	// remove
-	cache.Erase("123")
+	c.Erase("123")
 
 	// fetch failed
-	h3, ok := cache.Lookup("123")
+	h3, ok := c.Lookup("123")
 	assert(h3 == nil)
 	assert(!ok)
 
 	// h1&h2 still valid!
-	fmt.Printf("user1(%s)\n", h1.Value().(string))
-	fmt.Printf("user2(%s)\n", h2.Value().(string))
+	fmt.Printf("user1(%s)\n", h1.(cache.Handle).Value().(string))
+	fmt.Printf("user2(%s)\n", h2.(cache.Handle).Value().(string))
 
 	// release h1
 	// because the h2 handle the value, so the deleter is not ivoked!
-	h1.Release()
+	h1.Close()
 
 	// invoke the deleter
 	fmt.Println("invoke deleter(123) begin")
-	h2.Release()
+	h2.Close()
 	fmt.Println("invoke deleter(123) end")
 
 	// add new
-	h4 := cache.Insert("abc", "data:abc", len("data:abc"), func(key string, value interface{}) {
+	h4 := c.Insert("abc", "data:abc", len("data:abc"), func(key string, value interface{}) {
 		fmt.Printf("deleter(%q:%q)\n", key, value)
 	})
 	// release h4
 	// because the cache handle the value, so the deleter is not ivoked!
-	h4.Release()
+	h4.Close()
 
 	// cache length
-	length := cache.Length()
+	length := c.Length()
 	assert(length == 1)
 
 	// cache size
-	size := cache.Size()
+	size := c.Size()
 	assert(size == 8, "size:", size)
 
 	// add h5
 	// this will cause the capacity(10) overflow, so the h4 deleter will be invoked
 	fmt.Println("invoke deleter(h4) begin")
-	h5 := cache.Insert("456", "data:456", len("data:456"), func(key string, value interface{}) {
+	h5 := c.Insert("456", "data:456", len("data:456"), func(key string, value interface{}) {
 		fmt.Printf("deleter(%q:%q)\n", key, value)
 	})
 	fmt.Println("invoke deleter(h4) end")
 
 	// must release all handles
-	h5.Release()
+	h5.Close()
 
 	// stats
-	fmt.Println("StatsJSON:", cache.StatsJSON())
+	fmt.Println("StatsJSON:", c.StatsJSON())
 
 	// done
 	fmt.Println("Done")

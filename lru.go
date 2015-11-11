@@ -7,6 +7,7 @@ package cache
 import (
 	"container/list"
 	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -70,20 +71,13 @@ func (h *LRUHandle) TimeAccessed() time.Time {
 	return h.time_accessed.Load().(time.Time)
 }
 
-func (h *LRUHandle) Retain() Handle {
+func (h *LRUHandle) Retain() (handle io.Closer) {
 	h.c.mu.Lock()
 	defer h.c.mu.Unlock()
 	h.c.addref(h)
 	return h
 }
 
-func (h *LRUHandle) Release() {
-	h.c.mu.Lock()
-	defer h.c.mu.Unlock()
-	h.c.unref(h)
-}
-
-// match for io.Closer, same as h.Release.
 func (h *LRUHandle) Close() error {
 	h.c.mu.Lock()
 	defer h.c.mu.Unlock()
@@ -106,15 +100,15 @@ func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
 	if !ok {
 		return nil, false
 	}
-	value = h.Value()
-	h.Release()
+	value = h.(Handle).Value()
+	h.Close()
 	return
 }
 
 func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, size int, err error)) (value interface{}, err error) {
 	if h, ok := p.Lookup(key); ok {
-		value = h.Value()
-		h.Release()
+		value = h.(Handle).Value()
+		h.Close()
 		return
 	}
 	if getter == nil {
@@ -138,18 +132,18 @@ func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
 			return nil
 		}
 	}
-	v := h.Value()
-	h.Release()
+	v := h.(Handle).Value()
+	h.Close()
 	return v
 }
 
 func (p *LRUCache) Set(key string, value interface{}, size int, deleter ...func(key string, value interface{})) {
 	if len(deleter) > 0 {
 		h := p.Insert(key, value, size, deleter[0])
-		h.Release()
+		h.Close()
 	} else {
 		h := p.Insert(key, value, size, nil)
-		h.Release()
+		h.Close()
 	}
 }
 
@@ -169,12 +163,12 @@ func (p *LRUCache) NewId() uint64 {
 // the specified size against the total cache capacity.
 //
 // Return a handle that corresponds to the mapping.  The caller
-// must call handle.Release() when the returned mapping is no
+// must call handle.(Handle).Close() when the returned mapping is no
 // longer needed.
 //
 // When the inserted entry is no longer needed, the key and
 // value will be passed to "deleter".
-func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) Handle {
+func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) (handle io.Closer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -208,9 +202,9 @@ func (p *LRUCache) Insert(key string, value interface{}, size int, deleter func(
 // If the cache has no mapping for "key", returns nil, false.
 //
 // Else return a handle that corresponds to the mapping.  The caller
-// must call handle.Release() when the returned mapping is no
+// must call handle.Close() when the returned mapping is no
 // longer needed.
-func (p *LRUCache) Lookup(key string) (Handle, bool) {
+func (p *LRUCache) Lookup(key string) (handle io.Closer, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -229,9 +223,9 @@ func (p *LRUCache) Lookup(key string) (Handle, bool) {
 // If the cache has no mapping for "key", returns nil, false.
 //
 // Else return a handle that corresponds to the mapping and erase it.
-// The caller must call handle.Release() when the returned mapping is no
+// The caller must call handle.Close() when the returned mapping is no
 // longer needed.
-func (p *LRUCache) Take(key string) (Handle, bool) {
+func (p *LRUCache) Take(key string) (handle io.Closer, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

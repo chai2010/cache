@@ -14,11 +14,11 @@ import (
 )
 
 func ExampleLRUCache_simple() {
-	cache := cache.NewLRUCache(100)
-	defer cache.Close()
+	c := cache.NewLRUCache(100)
+	defer c.Close()
 
-	cache.Set("key1", "value1", 1)
-	v := cache.Value("key1").(string)
+	c.Set("key1", "value1", 1)
+	v := c.Value("key1").(string)
 
 	fmt.Println("key1:", v)
 	// Output:
@@ -26,23 +26,23 @@ func ExampleLRUCache_simple() {
 }
 
 func ExampleLRUCache_stack() {
-	cache := cache.NewLRUCache(100)
-	defer cache.Close()
+	c := cache.NewLRUCache(100)
+	defer c.Close()
 
-	cache.PushBack("key1", "value1", 1, nil)
-	cache.PushBack("key2", "value2", 1, nil)
-	cache.PushBack("key3", "value3", 1, nil)
+	c.PushBack("key1", "value1", 1, nil)
+	c.PushBack("key2", "value2", 1, nil)
+	c.PushBack("key3", "value3", 1, nil)
 
-	fmt.Println("front key:", cache.FrontKey())
-	fmt.Println("front value:", cache.FrontValue().(string))
-	fmt.Println("back key:", cache.BackKey())
-	fmt.Println("back value:", cache.BackValue().(string))
+	fmt.Println("front key:", c.FrontKey())
+	fmt.Println("front value:", c.FrontValue().(string))
+	fmt.Println("back key:", c.BackKey())
+	fmt.Println("back value:", c.BackValue().(string))
 
-	cache.RemoveFront()
-	cache.RemoveBack()
+	c.RemoveFront()
+	c.RemoveBack()
 
-	fmt.Println("front:", cache.FrontValue().(string))
-	fmt.Println("back:", cache.BackValue().(string))
+	fmt.Println("front:", c.FrontValue().(string))
+	fmt.Println("back:", c.BackValue().(string))
 
 	// Output:
 	// front key: key1
@@ -74,7 +74,7 @@ func ExampleLRUCache_realtimeTodoWorker() {
 				default:
 					if h := todo.PopFront(); h != nil {
 						h.Value().(func())()
-						h.Release()
+						h.Close()
 					}
 				}
 			}
@@ -110,29 +110,29 @@ func ExampleLRUCache_realtimeTodoWorker() {
 }
 
 func ExampleLRUCache_handle() {
-	cache := cache.NewLRUCache(100)
-	defer cache.Close()
+	c := cache.NewLRUCache(100)
+	defer c.Close()
 
-	h1 := cache.Insert("100", "101", 1, func(key string, value interface{}) {
+	h1 := c.Insert("100", "101", 1, func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
-	v1 := h1.Value().(string)
+	v1 := h1.(cache.Handle).Value().(string)
 	fmt.Printf("v1: %s\n", v1)
-	h1.Release()
+	h1.Close()
 
-	h2, ok := cache.Lookup("100")
+	h2, ok := c.Lookup("100")
 	if !ok {
 		log.Fatal("lookup failed!")
 	}
-	defer h2.Release()
+	defer h2.Close()
 
 	// h2 still valid after Erase
-	cache.Erase("100")
-	v2 := h2.Value().(string)
+	c.Erase("100")
+	v2 := h2.(cache.Handle).Value().(string)
 	fmt.Printf("v2: %s\n", v2)
 
 	// but new lookup will failed
-	_, ok = cache.Lookup("100")
+	_, ok = c.Lookup("100")
 	if ok {
 		log.Fatal("lookup succeed!")
 	}
@@ -158,15 +158,15 @@ func ExampleLRUHandle() {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(*Value).V)
 		value.(*Value).V = "nil"
 	})
-	fmt.Printf("h1: %s\n", h1.Value().(*Value).V)
-	todoList <- h1.Retain()
-	h1.Release()
+	fmt.Printf("h1: %s\n", h1.(cache.Handle).Value().(*Value).V)
+	todoList <- h1.(cache.Handle).Retain().(cache.Handle)
+	h1.Close()
 
 	c.Erase("100")
 
 	h2 := <-todoList
 	fmt.Printf("h2: %s\n", h2.Value().(*Value).V)
-	h2.Release()
+	h2.Close()
 
 	// Output:
 	// h1: 101
@@ -175,18 +175,18 @@ func ExampleLRUHandle() {
 }
 
 func ExampleLRUCache_getAndSet() {
-	cache := cache.NewLRUCache(100)
-	defer cache.Close()
+	c := cache.NewLRUCache(100)
+	defer c.Close()
 
 	// set dont return handle
-	cache.Set("key1", "value1", len("value1"))
+	c.Set("key1", "value1", len("value1"))
 
 	// set's deleter is optional
-	cache.Set("key2", "value2", len("value2"), func(key string, value interface{}) {
+	c.Set("key2", "value2", len("value2"), func(key string, value interface{}) {
 		fmt.Printf("deleter(%q, %q)\n", key, value.(string))
 	})
 
-	value, ok := cache.Get("key1")
+	value, ok := c.Get("key1")
 	if !ok {
 		log.Fatal("not found key1")
 	}
@@ -194,10 +194,10 @@ func ExampleLRUCache_getAndSet() {
 		log.Fatal("not equal value1")
 	}
 
-	value2 := cache.Value("key2", "null").(string)
+	value2 := c.Value("key2", "null").(string)
 	fmt.Println("key2:", value2)
 
-	value3 := cache.Value("key3", "null").(string)
+	value3 := c.Value("key3", "null").(string)
 	fmt.Println("key3:", value3)
 
 	fmt.Println("Done")
