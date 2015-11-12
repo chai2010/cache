@@ -30,14 +30,16 @@ func main() {
 	})
 
 	// fetch ok
-	v2, h2 := c.Lookup("123")
+	v2, h2, ok := c.Lookup("123")
+	assert(ok)
 	assert(h2 != nil)
 
 	// remove
 	c.Erase("123")
 
 	// fetch failed
-	_, h3 := c.Lookup("123")
+	_, h3, ok := c.Lookup("123")
+	assert(!ok)
 	assert(h3 == nil)
 
 	// h1&h2 still valid!

@@ -120,8 +120,8 @@ func ExampleLRUCache_handle() {
 	fmt.Printf("v1: %s\n", v1)
 	h1.Close()
 
-	v2, h2 := c.Lookup("100")
-	if h2 == nil {
+	v2, h2, ok := c.Lookup("100")
+	if !ok {
 		log.Fatal("lookup failed!")
 	}
 	defer h2.Close()
@@ -131,7 +131,7 @@ func ExampleLRUCache_handle() {
 	fmt.Printf("v2: %s\n", v2.(string))
 
 	// but new lookup will failed
-	if _, h := c.Lookup("100"); h != nil {
+	if _, _, ok := c.Lookup("100"); ok {
 		log.Fatal("lookup succeed!")
 	}
 

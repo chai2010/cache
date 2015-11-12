@@ -41,7 +41,7 @@ func (p *TCache) Insert(key, value int, size ...int) {
 }
 
 func (p *TCache) Lookup(key int) int {
-	if v, h := p.LRUCache.Lookup(strconv.Itoa(key)); h != nil {
+	if v, h, ok := p.LRUCache.Lookup(strconv.Itoa(key)); ok {
 		h.Close()
 		return v.(int)
 	}
@@ -53,101 +53,103 @@ func (p *TCache) Erase(key int) {
 }
 
 func TestLRUCache_hitAndMiss(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
-	tAssertEQ(t, -1, cache.Lookup(100))
+	tAssertEQ(t, -1, c.Lookup(100))
 
-	cache.Insert(100, 101)
-	tAssertEQ(t, 101, cache.Lookup(100))
-	tAssertEQ(t, -1, cache.Lookup(200))
-	tAssertEQ(t, -1, cache.Lookup(200))
+	c.Insert(100, 101)
+	tAssertEQ(t, 101, c.Lookup(100))
+	tAssertEQ(t, -1, c.Lookup(200))
+	tAssertEQ(t, -1, c.Lookup(200))
 
-	cache.Insert(200, 201)
-	tAssertEQ(t, 101, cache.Lookup(100))
-	tAssertEQ(t, 201, cache.Lookup(200))
-	tAssertEQ(t, -1, cache.Lookup(300))
+	c.Insert(200, 201)
+	tAssertEQ(t, 101, c.Lookup(100))
+	tAssertEQ(t, 201, c.Lookup(200))
+	tAssertEQ(t, -1, c.Lookup(300))
 
-	cache.Insert(100, 102)
-	tAssertEQ(t, 102, cache.Lookup(100))
-	tAssertEQ(t, 201, cache.Lookup(200))
-	tAssertEQ(t, -1, cache.Lookup(300))
+	c.Insert(100, 102)
+	tAssertEQ(t, 102, c.Lookup(100))
+	tAssertEQ(t, 201, c.Lookup(200))
+	tAssertEQ(t, -1, c.Lookup(300))
 
-	tAssertEQ(t, 1, len(cache.deleted_keys_))
-	tAssertEQ(t, 100, cache.deleted_keys_[0])
-	tAssertEQ(t, 101, cache.deleted_values_[0])
+	tAssertEQ(t, 1, len(c.deleted_keys_))
+	tAssertEQ(t, 100, c.deleted_keys_[0])
+	tAssertEQ(t, 101, c.deleted_values_[0])
 }
 
 func TestLRUCache_erase(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
-	cache.Erase(200)
-	tAssertEQ(t, 0, len(cache.deleted_keys_))
+	c.Erase(200)
+	tAssertEQ(t, 0, len(c.deleted_keys_))
 
-	cache.Insert(100, 101)
-	cache.Insert(200, 201)
-	cache.Erase(100)
-	tAssertEQ(t, -1, cache.Lookup(100))
-	tAssertEQ(t, 201, cache.Lookup(200))
-	tAssertEQ(t, 1, len(cache.deleted_keys_))
-	tAssertEQ(t, 100, cache.deleted_keys_[0])
-	tAssertEQ(t, 101, cache.deleted_values_[0])
+	c.Insert(100, 101)
+	c.Insert(200, 201)
+	c.Erase(100)
+	tAssertEQ(t, -1, c.Lookup(100))
+	tAssertEQ(t, 201, c.Lookup(200))
+	tAssertEQ(t, 1, len(c.deleted_keys_))
+	tAssertEQ(t, 100, c.deleted_keys_[0])
+	tAssertEQ(t, 101, c.deleted_values_[0])
 
-	cache.Erase(100)
-	tAssertEQ(t, -1, cache.Lookup(100))
-	tAssertEQ(t, 201, cache.Lookup(200))
-	tAssertEQ(t, 1, len(cache.deleted_keys_))
+	c.Erase(100)
+	tAssertEQ(t, -1, c.Lookup(100))
+	tAssertEQ(t, 201, c.Lookup(200))
+	tAssertEQ(t, 1, len(c.deleted_keys_))
 }
 
 func TestLRUCache_entriesArePinned(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
-	cache.Insert(100, 101)
-	v, h1 := cache.LRUCache.Lookup(strconv.Itoa(100))
+	c.Insert(100, 101)
+	v, h1, ok := c.LRUCache.Lookup(strconv.Itoa(100))
+	tAssertTrue(t, ok)
 	tAssertEQ(t, 101, v.(int))
 
-	cache.Insert(100, 102)
-	v, h2 := cache.LRUCache.Lookup(strconv.Itoa(100))
+	c.Insert(100, 102)
+	v, h2, ok := c.LRUCache.Lookup(strconv.Itoa(100))
+	tAssertTrue(t, ok)
 	tAssertEQ(t, 102, v.(int))
-	tAssertEQ(t, 0, len(cache.deleted_keys_))
+	tAssertEQ(t, 0, len(c.deleted_keys_))
 
 	h1.Close()
-	tAssertEQ(t, 1, len(cache.deleted_keys_))
-	tAssertEQ(t, 100, cache.deleted_keys_[0])
-	tAssertEQ(t, 101, cache.deleted_values_[0])
+	tAssertEQ(t, 1, len(c.deleted_keys_))
+	tAssertEQ(t, 100, c.deleted_keys_[0])
+	tAssertEQ(t, 101, c.deleted_values_[0])
 
-	cache.Erase(100)
-	tAssertEQ(t, -1, cache.Lookup(100))
-	tAssertEQ(t, 1, len(cache.deleted_keys_))
+	c.Erase(100)
+	tAssertEQ(t, -1, c.Lookup(100))
+	tAssertEQ(t, 1, len(c.deleted_keys_))
 
 	h2.Close()
-	tAssertEQ(t, 2, len(cache.deleted_keys_))
-	tAssertEQ(t, 100, cache.deleted_keys_[1])
-	tAssertEQ(t, 102, cache.deleted_values_[1])
+	tAssertEQ(t, 2, len(c.deleted_keys_))
+	tAssertEQ(t, 100, c.deleted_keys_[1])
+	tAssertEQ(t, 102, c.deleted_values_[1])
 }
 
 func TestLRUCache_evictionPolicy(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
-	cache.Insert(100, 101)
-	cache.Insert(200, 201)
+	c.Insert(100, 101)
+	c.Insert(200, 201)
 
 	// Frequently used entry must be kept around
 	for i := 0; i < tCacheSize+100; i++ {
-		cache.Insert(1000+i, 2000+i)
-		tAssertEQ(t, 2000+i, cache.Lookup(1000+i))
-		tAssertEQ(t, 101, cache.Lookup(100))
+		c.Insert(1000+i, 2000+i)
+		tAssertEQ(t, 2000+i, c.Lookup(1000+i))
+		tAssertEQ(t, 101, c.Lookup(100))
 	}
-	tAssertEQ(t, 101, cache.Lookup(100))
-	tAssertEQ(t, -1, cache.Lookup(200))
+	tAssertEQ(t, 101, c.Lookup(100))
+	tAssertEQ(t, -1, c.Lookup(200))
 }
 
 func TestLRUCache_heavyEntries(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
 	// Add a bunch of light and heavy entries and then count the combined
 	// size of items still in the cache, which must be approximately the
@@ -163,7 +165,7 @@ func TestLRUCache_heavyEntries(t *testing.T) {
 		} else {
 			weight = kHeavy
 		}
-		cache.Insert(index, 1000+index, weight)
+		c.Insert(index, 1000+index, weight)
 		added += weight
 		index++
 	}
@@ -176,7 +178,7 @@ func TestLRUCache_heavyEntries(t *testing.T) {
 		} else {
 			weight = kHeavy
 		}
-		var r = cache.Lookup(i)
+		var r = c.Lookup(i)
 		if r >= 0 {
 			cached_weight += weight
 			tAssertEQ(t, 1000+i, r)
@@ -186,11 +188,11 @@ func TestLRUCache_heavyEntries(t *testing.T) {
 }
 
 func TestLRUCache_NewId(t *testing.T) {
-	cache := tNewTCache(tCacheSize)
-	defer cache.Close()
+	c := tNewTCache(tCacheSize)
+	defer c.Close()
 
-	a := cache.NewId()
-	b := cache.NewId()
+	a := c.NewId()
+	b := c.NewId()
 	tAssertNE(t, a, b)
 }
 

@@ -94,15 +94,15 @@ func NewLRUCache(capacity int64) *LRUCache {
 }
 
 func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
-	if v, h := p.Lookup(key); h != nil {
+	if v, h, ok := p.Lookup(key); ok {
 		h.Close()
-		return v, true
+		return v, ok
 	}
 	return
 }
 
 func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, size int, err error)) (value interface{}, err error) {
-	if v, h := p.Lookup(key); h != nil {
+	if v, h, ok := p.Lookup(key); ok {
 		h.Close()
 		return v, nil
 	}
@@ -119,7 +119,7 @@ func (p *LRUCache) GetFrom(key string, getter func(key string) (v interface{}, s
 }
 
 func (p *LRUCache) Value(key string, defaultValue ...interface{}) interface{} {
-	if v, h := p.Lookup(key); h != nil {
+	if v, h, ok := p.Lookup(key); ok {
 		h.Close()
 		return v
 	}
@@ -198,34 +198,34 @@ func (p *LRUCache) Insert_(key string, value interface{}, size int, deleter func
 	return h
 }
 
-// If the cache has no mapping for "key", returns nil, nil.
+// If the cache has no mapping for "key", returns nil, nil, false.
 //
 // Else return a handle that corresponds to the mapping.  The caller
 // must call handle.Close() when the returned mapping is no
 // longer needed.
-func (p *LRUCache) Lookup(key string) (value interface{}, handle io.Closer) {
+func (p *LRUCache) Lookup(key string) (value interface{}, handle io.Closer, ok bool) {
 	// warning: (*LRUHandle)(nil) != (io.Closer)(nil)
-	if v, h := p.Lookup_(key); h != nil {
-		return v, h
+	if v, h, ok := p.Lookup_(key); ok {
+		return v, h, ok
 	}
 	return
 }
 
 // Lookup_ same as Lookup, but return *LRUHandle.
-func (p *LRUCache) Lookup_(key string) (value interface{}, handle *LRUHandle) {
+func (p *LRUCache) Lookup_(key string) (value interface{}, handle *LRUHandle, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	element := p.table[key]
 	if element == nil {
-		return nil, nil
+		return nil, nil, false
 	}
 
 	p.list.MoveToFront(element)
 	h := element.Value.(*LRUHandle)
 	h.time_accessed.Store(time.Now())
 	p.addref(h)
-	return h.Value(), h
+	return h.Value(), h, true
 }
 
 // If the cache has no mapping for "key", returns nil, false.

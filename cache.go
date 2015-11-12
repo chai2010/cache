@@ -29,12 +29,12 @@ type Cache interface {
 	// value will be passed to "deleter".
 	Insert(key string, value interface{}, size int, deleter func(key string, value interface{})) (handle io.Closer)
 
-	// If the cache has no mapping for "key", returns nil, nil.
+	// If the cache has no mapping for "key", returns nil, nil, false.
 	//
 	// Else return a handle that corresponds to the mapping.  The caller
 	// must call handle.Close() when the returned mapping is no
 	// longer needed.
-	Lookup(key string) (value interface{}, handle io.Closer)
+	Lookup(key string) (value interface{}, handle io.Closer, ok bool)
 
 	// If the cache contains entry for key, erase it.  Note that the
 	// underlying entry will be kept around until all existing handles
