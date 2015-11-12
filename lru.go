@@ -8,6 +8,7 @@ import (
 	"container/list"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,6 +22,10 @@ var _ Cache = (*LRUCache)(nil)
 // the cache. Note the capacity is not the number of items, but the
 // total sum of the Size() of each item.
 type LRUCache struct {
+	*_LRUCache
+}
+
+type _LRUCache struct {
 	mu sync.Mutex
 
 	// list & table of *LRUHandle objects
@@ -86,11 +91,22 @@ func (h *LRUHandle) Close() error {
 // NewLRUCache creates a new empty cache with the given capacity.
 func NewLRUCache(capacity int64) *LRUCache {
 	assert(capacity > 0)
-	return &LRUCache{
+	p := &_LRUCache{
 		list:     list.New(),
 		table:    make(map[string]*list.Element),
 		capacity: capacity,
 	}
+	runtime.SetFinalizer(p, (*_LRUCache).Close)
+	return &LRUCache{p}
+}
+
+// Destroys all existing entries by calling the "deleter"
+// function that was passed to the constructor.
+// REQUIRES: all handles must have been released.
+func (p *LRUCache) Close() error {
+	runtime.SetFinalizer(p._LRUCache, nil)
+	p._LRUCache.Close()
+	return nil
 }
 
 func (p *LRUCache) Get(key string) (value interface{}, ok bool) {
@@ -361,11 +377,11 @@ func (p *LRUCache) Keys() []string {
 	return keys
 }
 
-func (p *LRUCache) addref(h *LRUHandle) {
+func (p *_LRUCache) addref(h *LRUHandle) {
 	h.refs++
 }
 
-func (p *LRUCache) unref(h *LRUHandle) {
+func (p *_LRUCache) unref(h *LRUHandle) {
 	assert(h.refs > 0)
 	h.refs--
 	if h.refs <= 0 {
@@ -405,10 +421,7 @@ func (p *LRUCache) Clear() {
 	return
 }
 
-// Destroys all existing entries by calling the "deleter"
-// function that was passed to the constructor.
-// REQUIRES: all handles must have been released.
-func (p *LRUCache) Close() error {
+func (p *_LRUCache) Close() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -421,5 +434,4 @@ func (p *LRUCache) Close() error {
 	p.list = nil
 	p.table = nil
 	p.size = 0
-	return nil
 }
