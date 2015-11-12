@@ -66,7 +66,7 @@ func (p *Worker) AddTask(key interface{}, task func()) {
 	assert(task != nil)
 
 	skey := fmt.Sprintf("%q", key)
-	if _, h := p.tasks.Lookup_(skey); h != nil {
+	if _, h, ok := p.tasks.Lookup_(skey); ok {
 		h.Close()
 		return
 	}

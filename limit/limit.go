@@ -64,7 +64,7 @@ func (p *Opener) Open(name string) (f interface{}, h io.Closer, err error) {
 	assert(name != "")
 
 	// get from cache
-	if f, h = p.cache.Lookup(name); h != nil {
+	if f, h, ok := p.cache.Lookup(name); ok {
 		return f, h, nil
 	}
 
