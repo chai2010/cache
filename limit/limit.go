@@ -92,7 +92,7 @@ func (p *Opener) Open(name string) (f interface{}, h io.Closer, err error) {
 	h = p.cache.Insert(name, f, 1, func(key string, value interface{}) {
 		if err := p.close(value); err != nil {
 			if p.logger != nil {
-				p.logger.Printf("limit: Opener.close(key=%q) failed, err = %v\n", err)
+				p.logger.Printf("limit: Opener.close(key=%q) failed, err = %v\n", key, err)
 			}
 		}
 		p.wg.Done()
