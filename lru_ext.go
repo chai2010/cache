@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+func (p *LRUCache) HasKey(key string) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	_, ok := p.table[key]
+	return ok
+}
+
 func (p *LRUCache) FrontKey() (key string) {
 	if h := p.Front(); h != nil {
 		key = h.Key()
